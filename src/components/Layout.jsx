@@ -41,6 +41,14 @@ export default function Layout() {
               >
                 이력 조회
               </NavLink>
+              <NavLink
+                to="/issues"
+                className={({ isActive }) =>
+                  isActive ? 'font-semibold underline' : 'opacity-80 hover:opacity-100'
+                }
+              >
+                이슈 현황
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

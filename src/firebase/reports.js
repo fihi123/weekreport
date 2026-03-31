@@ -70,3 +70,12 @@ export async function getMyThisWeekReport(member) {
   const monday = getMonday()
   return getReport(member, monday)
 }
+
+// 이슈가 있는 전체 보고서 조회 (이슈 현황 페이지용)
+export async function getAllReportsWithIssues() {
+  const snap = await getDocs(collection(db, COL))
+  return snap.docs
+    .map((d) => d.data())
+    .filter((r) => r.items?.some((it) => it.group === '이슈사항' && it.content?.trim()))
+    .sort((a, b) => b.weekStart.localeCompare(a.weekStart))
+}
