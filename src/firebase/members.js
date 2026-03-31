@@ -29,3 +29,21 @@ export async function getMembers() {
 export async function saveMembers(members) {
   await setDoc(doc(db, COL, DOC_ID), { members })
 }
+
+// 관리자 비밀번호 조회
+export async function getAdminPassword() {
+  const snap = await getDoc(doc(db, COL, 'admin'))
+  return snap.exists() ? snap.data().password : null
+}
+
+// 관리자 비밀번호 저장
+export async function setAdminPassword(password) {
+  await setDoc(doc(db, COL, 'admin'), { password })
+}
+
+// 관리자 비밀번호 검증
+export async function verifyAdminPassword(input) {
+  const password = await getAdminPassword()
+  if (!password) return true // 아직 설정 안 됨 → 통과
+  return input === password
+}
