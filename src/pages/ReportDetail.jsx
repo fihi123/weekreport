@@ -55,7 +55,14 @@ export default function ReportDetail() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-gray-800">{report.member}님의 주간보고</h2>
-          <p className="text-sm text-gray-500 mt-1">{getWeekLabel(report.weekStart)}</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {getWeekLabel(report.weekStart)}
+            {report.updatedAt?.toDate && (
+              <span className="ml-2 text-gray-400">
+                · {report.updatedAt.toDate().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span

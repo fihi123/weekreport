@@ -78,7 +78,14 @@ export default function History() {
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">{report.member}</p>
                   </div>
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cls}`}>{text}</span>
+                  <div className="flex items-center gap-2">
+                    {report.updatedAt && (
+                      <span className="text-xs text-gray-400">
+                        {report.updatedAt.toDate ? report.updatedAt.toDate().toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+                      </span>
+                    )}
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cls}`}>{text}</span>
+                  </div>
                 </div>
               </div>
             )
