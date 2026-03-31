@@ -4,6 +4,7 @@ import { getMonday, getWeekLabel, getRecentWeeks, dateToId } from '../utils/week
 import { getWeekReports } from '../firebase/reports'
 import { getMember } from '../utils/member'
 import { useMembers } from '../context/MembersContext'
+import { ROLE_LABEL } from '../firebase/members'
 import { exportWeekToExcel } from '../utils/exportExcel'
 
 const STATUS_LABEL = {
@@ -15,7 +16,7 @@ const STATUS_LABEL = {
 export default function Dashboard() {
   const navigate = useNavigate()
   const me = getMember()
-  const { members: MEMBERS } = useMembers()
+  const { names, getRole } = useMembers()
   const weeks = getRecentWeeks(8)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [reports, setReports] = useState([])
@@ -31,10 +32,11 @@ export default function Dashboard() {
   }, [selectedWeek])
 
   const reportMap = Object.fromEntries(reports.map((r) => [r.member, r]))
-  const submittedCount = reports.filter((r) => r.status === 'submitted').length
+  const reporterNames = names.filter((n) => getRole(n) === 'reporter')
+  const submittedCount = reporterNames.filter((n) => reportMap[n]?.status === 'submitted').length
 
-  // 내 이번 주 제출 상태
   const isCurrentWeek = dateToId(selectedWeek) === dateToId(weeks[0])
+  const myRole = getRole(me)
   const myReport = reportMap[me]
   const myStatus = myReport?.status
 
@@ -44,23 +46,25 @@ export default function Dashboard() {
         <h2 className="text-xl font-bold text-gray-800">전체 현황</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => exportWeekToExcel(reports, getWeekLabel(selectedWeek), MEMBERS)}
+            onClick={() => exportWeekToExcel(reports, getWeekLabel(selectedWeek), names)}
             disabled={loading || reports.length === 0}
             className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
           >
             엑셀 다운로드
           </button>
-          <button
-            onClick={() => navigate('/write')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-          >
-            내 보고서 작성
-          </button>
+          {myRole === 'reporter' && (
+            <button
+              onClick={() => navigate('/write')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+            >
+              내 보고서 작성
+            </button>
+          )}
         </div>
       </div>
 
-      {/* 내 제출 상태 배너 */}
-      {isCurrentWeek && !loading && (
+      {/* 내 제출 상태 배너 (보고자만) */}
+      {isCurrentWeek && !loading && myRole === 'reporter' && (
         <div
           className={`mb-5 p-3 rounded-lg text-sm flex items-center justify-between ${
             myStatus === 'submitted'
@@ -111,12 +115,12 @@ export default function Dashboard() {
         <p className="text-sm text-gray-500 mb-1">{getWeekLabel(selectedWeek)}</p>
         <div className="flex items-end gap-2">
           <span className="text-3xl font-bold text-blue-600">{submittedCount}</span>
-          <span className="text-gray-500 text-sm mb-1">/ {MEMBERS.length}명 제출</span>
+          <span className="text-gray-500 text-sm mb-1">/ {reporterNames.length}명 제출</span>
         </div>
         <div className="mt-3 bg-gray-100 rounded-full h-2">
           <div
             className="bg-blue-500 h-2 rounded-full transition-all"
-            style={{ width: `${(submittedCount / MEMBERS.length) * 100}%` }}
+            style={{ width: `${reporterNames.length > 0 ? (submittedCount / reporterNames.length) * 100 : 0}%` }}
           />
         </div>
       </div>
@@ -133,8 +137,9 @@ export default function Dashboard() {
         <div className="text-center py-10 text-gray-400">불러오는 중...</div>
       ) : (
         <div className="flex flex-col gap-3">
-          {MEMBERS.map((name) => {
+          {names.map((name) => {
             const report = reportMap[name]
+            const role = getRole(name)
             const statusKey = report?.status || 'none'
             const { text, cls } = STATUS_LABEL[statusKey]
             const isMe = name === me
@@ -148,15 +153,24 @@ export default function Dashboard() {
                 } ${isMe ? 'border-blue-200 ring-1 ring-blue-100' : 'border-gray-100'}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm">
+                  <div className={`w-9 h-9 rounded-full font-bold flex items-center justify-center text-sm ${
+                    role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
                     {name[0]}
                   </div>
-                  <div>
+                  <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-800">{name}</span>
-                    {isMe && <span className="ml-2 text-xs text-blue-500">나</span>}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {ROLE_LABEL[role]}
+                    </span>
+                    {isMe && <span className="text-xs text-blue-500">나</span>}
                   </div>
                 </div>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cls}`}>{text}</span>
+                {role === 'reporter' && (
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${cls}`}>{text}</span>
+                )}
               </div>
             )
           })}

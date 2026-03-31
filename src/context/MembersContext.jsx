@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { getMembers } from '../firebase/members'
 
-const MembersContext = createContext([])
+const MembersContext = createContext({ members: [], names: [], getRole: () => 'reporter', refresh: () => {} })
 
 export function MembersProvider({ children }) {
   const [members, setMembers] = useState([])
@@ -12,15 +12,21 @@ export function MembersProvider({ children }) {
       const list = await getMembers()
       setMembers(list)
     } catch {
-      // fallback
-      setMembers(['팀장', '김민준', '이서연', '박지호', '최유진', '정다은', '한승우'])
+      setMembers([
+        { name: '백승현', role: 'admin' },
+        { name: '윤성현', role: 'reporter' },
+      ])
     }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  function refresh() { load() }
+  const names = members.map((m) => m.name)
+
+  function getRole(name) {
+    return members.find((m) => m.name === name)?.role || 'reporter'
+  }
 
   if (loading) {
     return (
@@ -29,7 +35,7 @@ export function MembersProvider({ children }) {
   }
 
   return (
-    <MembersContext.Provider value={{ members, refresh }}>
+    <MembersContext.Provider value={{ members, names, getRole, refresh: load }}>
       {children}
     </MembersContext.Provider>
   )

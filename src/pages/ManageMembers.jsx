@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMembers } from '../context/MembersContext'
-import { saveMembers } from '../firebase/members'
+import { saveMembers, ROLE_LABEL } from '../firebase/members'
 import Toast from '../components/Toast'
 import ConfirmModal from '../components/ConfirmModal'
 
 export default function ManageMembers() {
   const navigate = useNavigate()
   const { members, refresh } = useMembers()
-  const [list, setList] = useState([...members])
+  const [list, setList] = useState(members.map((m) => ({ ...m })))
   const [newName, setNewName] = useState('')
+  const [newRole, setNewRole] = useState('reporter')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -17,17 +18,23 @@ export default function ManageMembers() {
   function handleAdd() {
     const name = newName.trim()
     if (!name) return
-    if (list.includes(name)) {
+    if (list.some((m) => m.name === name)) {
       setToast({ message: '이미 존재하는 이름입니다', type: 'error' })
       return
     }
-    setList([...list, name])
+    setList([...list, { name, role: newRole }])
     setNewName('')
   }
 
   function handleRemove(name) {
-    setList(list.filter((n) => n !== name))
+    setList(list.filter((m) => m.name !== name))
     setDeleteTarget(null)
+  }
+
+  function toggleRole(index) {
+    setList(list.map((m, i) =>
+      i === index ? { ...m, role: m.role === 'admin' ? 'reporter' : 'admin' } : m
+    ))
   }
 
   function handleMoveUp(i) {
@@ -82,6 +89,14 @@ export default function ManageMembers() {
           placeholder="팀원 이름 입력"
           className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
         />
+        <select
+          value={newRole}
+          onChange={(e) => setNewRole(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+        >
+          <option value="reporter">보고자</option>
+          <option value="admin">관리자</option>
+        </select>
         <button
           onClick={handleAdd}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
@@ -92,19 +107,29 @@ export default function ManageMembers() {
 
       {/* 목록 */}
       <div className="flex flex-col gap-2 mb-6">
-        {list.map((name, i) => (
-          <div key={name} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex items-center justify-between">
+        {list.map((m, i) => (
+          <div key={m.name} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm">
-                {name[0]}
+              <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-sm ${
+                m.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {m.name[0]}
               </div>
-              <span className="font-medium text-gray-800 text-sm">{name}</span>
+              <span className="font-medium text-gray-800 text-sm">{m.name}</span>
+              <button
+                onClick={() => toggleRole(i)}
+                className={`text-xs px-2 py-0.5 rounded-full cursor-pointer ${
+                  m.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                }`}
+              >
+                {ROLE_LABEL[m.role]}
+              </button>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => handleMoveUp(i)} disabled={i === 0} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-20 text-xs">▲</button>
               <button onClick={() => handleMoveDown(i)} disabled={i === list.length - 1} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-20 text-xs">▼</button>
               <button
-                onClick={() => setDeleteTarget(name)}
+                onClick={() => setDeleteTarget(m.name)}
                 className="ml-2 p-1 text-red-400 hover:text-red-600 text-xs"
               >
                 삭제

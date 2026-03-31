@@ -13,7 +13,7 @@ const STATUS_LABEL = {
 export default function History() {
   const navigate = useNavigate()
   const me = getMember()
-  const { members: MEMBERS } = useMembers()
+  const { names: MEMBERS } = useMembers()
   const [selectedMember, setSelectedMember] = useState(me)
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)

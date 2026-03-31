@@ -4,7 +4,16 @@ import { db } from './config'
 const DOC_ID = 'team'
 const COL = 'settings'
 
-const DEFAULT_MEMBERS = ['팀장', '김민준', '이서연', '박지호', '최유진', '정다은', '한승우']
+// role: 'admin' (관리자) | 'reporter' (보고자)
+const DEFAULT_MEMBERS = [
+  { name: '백승현', role: 'admin' },
+  { name: '윤성현', role: 'reporter' },
+]
+
+export const ROLE_LABEL = {
+  admin: '관리자',
+  reporter: '보고자',
+}
 
 // 팀원 목록 조회 (없으면 기본값 저장 후 반환)
 export async function getMembers() {

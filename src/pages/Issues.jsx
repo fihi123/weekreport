@@ -8,7 +8,7 @@ const TABS = ['미해결', '해결']
 
 export default function Issues() {
   const navigate = useNavigate()
-  const { members: MEMBERS } = useMembers()
+  const { names: MEMBERS } = useMembers()
   const [tab, setTab] = useState('미해결')
   const [allIssues, setAllIssues] = useState([])
   const [loading, setLoading] = useState(true)

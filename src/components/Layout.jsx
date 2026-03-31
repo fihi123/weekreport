@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { getMember, clearMember } from '../utils/member'
+import { useMembers } from '../context/MembersContext'
 import { getAllReportsWithIssues } from '../firebase/reports'
+import { ROLE_LABEL } from '../firebase/members'
 
 export default function Layout() {
   const member = getMember()
   const navigate = useNavigate()
+  const { getRole } = useMembers()
+  const role = getRole(member)
   const [unresolvedCount, setUnresolvedCount] = useState(0)
 
   useEffect(() => {
@@ -35,7 +39,9 @@ export default function Layout() {
             <span className="font-bold text-lg tracking-tight">주간보고</span>
             <nav className="flex gap-4 text-sm">
               <NavLink to="/dashboard" className={linkClass}>전체 현황</NavLink>
-              <NavLink to="/write" className={linkClass}>보고서 작성</NavLink>
+              {role === 'reporter' && (
+                <NavLink to="/write" className={linkClass}>보고서 작성</NavLink>
+              )}
               <NavLink to="/history" className={linkClass}>이력 조회</NavLink>
               <NavLink to="/issues" className={linkClass}>
                 이슈 현황
@@ -48,13 +54,22 @@ export default function Layout() {
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="opacity-80">{member}</span>
-            <NavLink
-              to="/members"
-              className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs"
-            >
-              팀원관리
-            </NavLink>
+            <div className="flex items-center gap-1.5">
+              <span className="opacity-80">{member}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                role === 'admin' ? 'bg-purple-500/30 text-purple-100' : 'bg-blue-500/30 text-blue-100'
+              }`}>
+                {ROLE_LABEL[role]}
+              </span>
+            </div>
+            {role === 'admin' && (
+              <NavLink
+                to="/members"
+                className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs"
+              >
+                팀원관리
+              </NavLink>
+            )}
             <button
               onClick={handleLogout}
               className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-xs"
