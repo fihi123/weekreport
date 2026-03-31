@@ -6,7 +6,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
@@ -51,10 +50,9 @@ export async function getWeekReports(weekStart) {
   const q = query(
     collection(db, COL),
     where('weekStart', '==', dateToId(weekStart)),
-    orderBy('member')
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data())
+  return snap.docs.map((d) => d.data()).sort((a, b) => a.member.localeCompare(b.member))
 }
 
 // 특정 팀원의 전체 이력 조회
@@ -62,10 +60,9 @@ export async function getMemberHistory(member) {
   const q = query(
     collection(db, COL),
     where('member', '==', member),
-    orderBy('weekStart', 'desc')
   )
   const snap = await getDocs(q)
-  return snap.docs.map((d) => d.data())
+  return snap.docs.map((d) => d.data()).sort((a, b) => b.weekStart.localeCompare(a.weekStart))
 }
 
 // 이번 주 내 보고서 조회
