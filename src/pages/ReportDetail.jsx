@@ -60,14 +60,47 @@ export default function ReportDetail() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {report.items.map((item, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <p className="text-sm font-semibold text-gray-600 mb-2">{item.label}</p>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-              {item.content || <span className="text-gray-300">내용 없음</span>}
-            </p>
-          </div>
-        ))}
+        {(() => {
+          const rendered = new Set()
+          return report.items.map((item, i) => {
+            if (item.group === '이슈사항') {
+              if (rendered.has('이슈사항')) return null
+              rendered.add('이슈사항')
+              const issueItems = report.items.filter((it) => it.group === '이슈사항')
+              return (
+                <div key="issue-group" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                  <p className="text-sm font-semibold text-gray-600 mb-4">이슈사항</p>
+                  <div className="flex flex-col gap-4">
+                    {issueItems.map((issue, j) => (
+                      <div key={j}>
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            issue.label === '해결'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-600'
+                          }`}
+                        >
+                          {issue.label}
+                        </span>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed mt-2">
+                          {issue.content || <span className="text-gray-300">내용 없음</span>}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+            return (
+              <div key={i} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <p className="text-sm font-semibold text-gray-600 mb-2">{item.label}</p>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  {item.content || <span className="text-gray-300">내용 없음</span>}
+                </p>
+              </div>
+            )
+          })
+        })()}
       </div>
     </div>
   )

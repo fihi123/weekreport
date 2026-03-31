@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getMember } from '../utils/member'
-import { getMonday, getWeekLabel, dateToId } from '../utils/weeks'
+import { getMonday, getWeekLabel } from '../utils/weeks'
 import { saveReport, getReport, getReportById } from '../firebase/reports'
 
 const DEFAULT_ITEMS = [
-  { label: '이번 주 완료 업무', content: '' },
-  { label: '다음 주 계획', content: '' },
-  { label: '이슈 / 건의사항', content: '' },
+  { label: '이번 주 완료 업무', content: '', group: null },
+  { label: '다음 주 계획', content: '', group: null },
+  { label: '해결', content: '', group: '이슈사항' },
+  { label: '미해결', content: '', group: '이슈사항' },
 ]
 
 export default function Write() {
@@ -30,7 +31,12 @@ export default function Write() {
       }
       if (report) {
         setExistingReport(report)
-        setItems(report.items)
+        // 기존 데이터에 group 필드 없으면 DEFAULT_ITEMS 기준으로 병합
+        const merged = DEFAULT_ITEMS.map((def, i) => ({
+          ...def,
+          content: report.items[i]?.content ?? '',
+        }))
+        setItems(merged)
       }
       setLoading(false)
     }
@@ -58,6 +64,13 @@ export default function Write() {
   const isSubmitted = existingReport?.status === 'submitted'
   const weekLabel = getWeekLabel(weekStart)
 
+  // 이슈사항 그룹 인덱스
+  const issueIndexes = items
+    .map((item, i) => (item.group === '이슈사항' ? i : null))
+    .filter((i) => i !== null)
+
+  const rendered = new Set()
+
   return (
     <div>
       <div className="mb-6">
@@ -72,18 +85,56 @@ export default function Write() {
       )}
 
       <div className="flex flex-col gap-5">
-        {items.map((item, i) => (
-          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">{item.label}</label>
-            <textarea
-              value={item.content}
-              onChange={(e) => updateItem(i, e.target.value)}
-              rows={4}
-              placeholder="내용을 입력하세요"
-              className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
-            />
-          </div>
-        ))}
+        {items.map((item, i) => {
+          // 이슈사항 그룹 - 첫 번째 항목일 때만 카드 렌더링
+          if (item.group === '이슈사항') {
+            if (rendered.has('이슈사항')) return null
+            rendered.add('이슈사항')
+            return (
+              <div key="issue-group" className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <p className="text-sm font-semibold text-gray-700 mb-4">이슈사항</p>
+                <div className="flex flex-col gap-4">
+                  {issueIndexes.map((idx) => (
+                    <div key={idx}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            items[idx].label === '해결'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-600'
+                          }`}
+                        >
+                          {items[idx].label}
+                        </span>
+                      </div>
+                      <textarea
+                        value={items[idx].content}
+                        onChange={(e) => updateItem(idx, e.target.value)}
+                        rows={3}
+                        placeholder={`${items[idx].label} 이슈를 입력하세요`}
+                        className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          }
+
+          // 일반 항목
+          return (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{item.label}</label>
+              <textarea
+                value={item.content}
+                onChange={(e) => updateItem(i, e.target.value)}
+                rows={4}
+                placeholder="내용을 입력하세요"
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+            </div>
+          )
+        })}
       </div>
 
       <div className="flex gap-3 mt-6 justify-end">
