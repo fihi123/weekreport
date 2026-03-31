@@ -2,25 +2,25 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllReportsWithIssues } from '../firebase/reports'
 import { getWeekLabel } from '../utils/weeks'
-import { MEMBERS } from '../utils/member'
+import { useMembers } from '../context/MembersContext'
 
 const TABS = ['미해결', '해결']
 
 export default function Issues() {
   const navigate = useNavigate()
+  const { members: MEMBERS } = useMembers()
   const [tab, setTab] = useState('미해결')
   const [allIssues, setAllIssues] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [memberFilter, setMemberFilter] = useState('전체')
 
   useEffect(() => {
-    getAllReportsWithIssues().then((data) => {
-      setAllIssues(data)
-      setLoading(false)
-    })
+    getAllReportsWithIssues()
+      .then((data) => { setAllIssues(data); setLoading(false) })
+      .catch(() => { setError('이슈를 불러오는 중 오류가 발생했습니다.'); setLoading(false) })
   }, [])
 
-  // tab(해결/미해결)에 해당하는 이슈만 추출
   const filtered = allIssues
     .flatMap((report) => {
       const issueItem = report.items.find((it) => it.group === '이슈사항' && it.label === tab)
@@ -38,7 +38,6 @@ export default function Issues() {
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-5">이슈 현황</h2>
 
-      {/* 탭 */}
       <div className="flex gap-2 mb-5">
         {TABS.map((t) => (
           <button
@@ -53,11 +52,18 @@ export default function Issues() {
             }`}
           >
             {t}
+            {!loading && (
+              <span className="ml-1.5 text-xs opacity-80">
+                ({allIssues.flatMap((r) => {
+                  const item = r.items.find((it) => it.group === '이슈사항' && it.label === t)
+                  return item?.content?.trim() ? [1] : []
+                }).length})
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* 팀원 필터 */}
       <div className="flex gap-2 flex-wrap mb-6">
         {['전체', ...MEMBERS].map((name) => (
           <button
@@ -74,7 +80,14 @@ export default function Issues() {
         ))}
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="text-center py-10">
+          <p className="text-red-500 mb-3">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-blue-600 hover:underline">
+            새로고침
+          </button>
+        </div>
+      ) : loading ? (
         <div className="text-center py-20 text-gray-400">불러오는 중...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">

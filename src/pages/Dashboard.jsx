@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMonday, getWeekLabel, getRecentWeeks, dateToId } from '../utils/weeks'
 import { getWeekReports } from '../firebase/reports'
-import { MEMBERS, getMember } from '../utils/member'
+import { getMember } from '../utils/member'
+import { useMembers } from '../context/MembersContext'
+import { exportWeekToExcel } from '../utils/exportExcel'
 
 const STATUS_LABEL = {
   submitted: { text: '제출완료', cls: 'bg-green-100 text-green-700' },
@@ -13,33 +15,75 @@ const STATUS_LABEL = {
 export default function Dashboard() {
   const navigate = useNavigate()
   const me = getMember()
+  const { members: MEMBERS } = useMembers()
   const weeks = getRecentWeeks(8)
   const [selectedWeek, setSelectedWeek] = useState(weeks[0])
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
-    getWeekReports(selectedWeek).then((data) => {
-      setReports(data)
-      setLoading(false)
-    })
+    setError(null)
+    getWeekReports(selectedWeek)
+      .then((data) => { setReports(data); setLoading(false) })
+      .catch(() => { setError('보고서를 불러오는 중 오류가 발생했습니다.'); setLoading(false) })
   }, [selectedWeek])
 
   const reportMap = Object.fromEntries(reports.map((r) => [r.member, r]))
   const submittedCount = reports.filter((r) => r.status === 'submitted').length
 
+  // 내 이번 주 제출 상태
+  const isCurrentWeek = dateToId(selectedWeek) === dateToId(weeks[0])
+  const myReport = reportMap[me]
+  const myStatus = myReport?.status
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-800">전체 현황</h2>
-        <button
-          onClick={() => navigate('/write')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
-        >
-          내 보고서 작성
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportWeekToExcel(reports, getWeekLabel(selectedWeek), MEMBERS)}
+            disabled={loading || reports.length === 0}
+            className="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-40"
+          >
+            엑셀 다운로드
+          </button>
+          <button
+            onClick={() => navigate('/write')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700"
+          >
+            내 보고서 작성
+          </button>
+        </div>
       </div>
+
+      {/* 내 제출 상태 배너 */}
+      {isCurrentWeek && !loading && (
+        <div
+          className={`mb-5 p-3 rounded-lg text-sm flex items-center justify-between ${
+            myStatus === 'submitted'
+              ? 'bg-green-50 border border-green-200 text-green-700'
+              : myStatus === 'draft'
+              ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+              : 'bg-red-50 border border-red-200 text-red-600'
+          }`}
+        >
+          <span>
+            {myStatus === 'submitted'
+              ? '이번 주 보고서를 제출했습니다.'
+              : myStatus === 'draft'
+              ? '이번 주 보고서가 임시저장 상태입니다.'
+              : '이번 주 보고서를 아직 작성하지 않았습니다.'}
+          </span>
+          {myStatus !== 'submitted' && (
+            <button onClick={() => navigate('/write')} className="font-semibold underline ml-3 whitespace-nowrap">
+              작성하기
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 주차 선택 */}
       <div className="flex gap-2 flex-wrap mb-6">
@@ -78,7 +122,14 @@ export default function Dashboard() {
       </div>
 
       {/* 팀원 목록 */}
-      {loading ? (
+      {error ? (
+        <div className="text-center py-10">
+          <p className="text-red-500 mb-3">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-blue-600 hover:underline">
+            새로고침
+          </button>
+        </div>
+      ) : loading ? (
         <div className="text-center py-10 text-gray-400">불러오는 중...</div>
       ) : (
         <div className="flex flex-col gap-3">

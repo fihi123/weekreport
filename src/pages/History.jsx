@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMember } from '../utils/member'
-import { MEMBERS } from '../utils/member'
+import { useMembers } from '../context/MembersContext'
 import { getMemberHistory } from '../firebase/reports'
 import { getWeekLabel } from '../utils/weeks'
 
@@ -13,23 +13,24 @@ const STATUS_LABEL = {
 export default function History() {
   const navigate = useNavigate()
   const me = getMember()
+  const { members: MEMBERS } = useMembers()
   const [selectedMember, setSelectedMember] = useState(me)
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
-    getMemberHistory(selectedMember).then((data) => {
-      setReports(data)
-      setLoading(false)
-    })
+    setError(null)
+    getMemberHistory(selectedMember)
+      .then((data) => { setReports(data); setLoading(false) })
+      .catch(() => { setError('이력을 불러오는 중 오류가 발생했습니다.'); setLoading(false) })
   }, [selectedMember])
 
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-6">이력 조회</h2>
 
-      {/* 팀원 필터 */}
       <div className="flex gap-2 flex-wrap mb-6">
         {MEMBERS.map((name) => (
           <button
@@ -46,7 +47,14 @@ export default function History() {
         ))}
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="text-center py-10">
+          <p className="text-red-500 mb-3">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-blue-600 hover:underline">
+            새로고침
+          </button>
+        </div>
+      ) : loading ? (
         <div className="text-center py-10 text-gray-400">불러오는 중...</div>
       ) : reports.length === 0 ? (
         <div className="text-center py-16 text-gray-400">

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getMember } from '../utils/member'
 import { getMonday, getWeekLabel, getRecentWeeks, dateToId } from '../utils/weeks'
 import { saveReport, getReport, getReportById } from '../firebase/reports'
+import Toast from '../components/Toast'
+import ConfirmModal from '../components/ConfirmModal'
 
 const DEFAULT_ITEMS = [
   { label: '이번 주 완료 업무', content: '', group: null },
@@ -15,6 +17,13 @@ function resetItems() {
   return DEFAULT_ITEMS.map((item) => ({ ...item, content: '' }))
 }
 
+function mergeItems(reportItems) {
+  return DEFAULT_ITEMS.map((def) => {
+    const match = reportItems.find((ri) => ri.label === def.label)
+    return { ...def, content: match?.content ?? '' }
+  })
+}
+
 export default function Write() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -25,27 +34,31 @@ export default function Write() {
   const [items, setItems] = useState(resetItems())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
   const [existingReport, setExistingReport] = useState(null)
+  const [toast, setToast] = useState(null)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     setLoading(true)
     setItems(resetItems())
     setExistingReport(null)
+    setError(null)
 
     async function load() {
-      let report = null
-      if (id) {
-        report = await getReportById(id)
-      } else {
-        report = await getReport(member, selectedWeek)
-      }
-      if (report) {
-        setExistingReport(report)
-        const merged = DEFAULT_ITEMS.map((def, i) => ({
-          ...def,
-          content: report.items[i]?.content ?? '',
-        }))
-        setItems(merged)
+      try {
+        let report = null
+        if (id) {
+          report = await getReportById(id)
+        } else {
+          report = await getReport(member, selectedWeek)
+        }
+        if (report) {
+          setExistingReport(report)
+          setItems(mergeItems(report.items))
+        }
+      } catch (e) {
+        setError('보고서를 불러오는 중 오류가 발생했습니다.')
       }
       setLoading(false)
     }
@@ -56,16 +69,24 @@ export default function Write() {
     setItems((prev) => prev.map((item, i) => (i === index ? { ...item, content: value } : item)))
   }
 
-  async function handleSave(status) {
+  const handleSave = useCallback(async (status) => {
     setSaving(true)
     try {
       await saveReport({ member, weekStart: selectedWeek, items, status })
       if (status === 'submitted') {
         navigate('/dashboard')
+      } else {
+        setToast({ message: '임시저장 되었습니다', type: 'success' })
       }
+    } catch (e) {
+      setToast({ message: '저장 중 오류가 발생했습니다', type: 'error' })
     } finally {
       setSaving(false)
     }
+  }, [member, selectedWeek, items, navigate])
+
+  function handleSubmitClick() {
+    setShowConfirm(true)
   }
 
   const isSubmitted = existingReport?.status === 'submitted'
@@ -79,7 +100,6 @@ export default function Write() {
       <div className="mb-5">
         <h2 className="text-xl font-bold text-gray-800 mb-3">보고서 작성</h2>
 
-        {/* 주차 선택 - id로 진입 시 숨김 */}
         {!id && (
           <div className="flex gap-2 flex-wrap">
             {weeks.map((w) => {
@@ -112,7 +132,14 @@ export default function Write() {
         </div>
       )}
 
-      {loading ? (
+      {error ? (
+        <div className="text-center py-16">
+          <p className="text-red-500 mb-3">{error}</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-blue-600 hover:underline">
+            새로고침
+          </button>
+        </div>
+      ) : loading ? (
         <div className="text-center py-20 text-gray-400">불러오는 중...</div>
       ) : (
         <>
@@ -176,7 +203,7 @@ export default function Write() {
               임시저장
             </button>
             <button
-              onClick={() => handleSave('submitted')}
+              onClick={handleSubmitClick}
               disabled={saving}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-40"
             >
@@ -184,6 +211,18 @@ export default function Write() {
             </button>
           </div>
         </>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {showConfirm && (
+        <ConfirmModal
+          title="보고서 제출"
+          message={`${getWeekLabel(selectedWeek)} 보고서를 제출하시겠습니까?`}
+          confirmText="제출"
+          onConfirm={() => { setShowConfirm(false); handleSave('submitted') }}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
     </div>
   )

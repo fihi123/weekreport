@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MEMBERS, setMember, getMember } from '../utils/member'
+import { setMember, getMember } from '../utils/member'
+import { useMembers } from '../context/MembersContext'
 
 export default function SelectMember() {
   const navigate = useNavigate()
+  const { members } = useMembers()
   const current = getMember()
   const [selected, setSelected] = useState(current || '')
 
@@ -20,7 +22,7 @@ export default function SelectMember() {
         <p className="text-gray-500 text-sm text-center mb-8">팀원을 선택해 주세요</p>
 
         <div className="flex flex-col gap-2 mb-8">
-          {MEMBERS.map((name) => (
+          {members.map((name) => (
             <button
               key={name}
               onClick={() => setSelected(name)}

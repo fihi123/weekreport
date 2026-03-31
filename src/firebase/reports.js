@@ -4,6 +4,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  deleteDoc,
   query,
   where,
   serverTimestamp,
@@ -69,6 +70,11 @@ export async function getMemberHistory(member) {
 export async function getMyThisWeekReport(member) {
   const monday = getMonday()
   return getReport(member, monday)
+}
+
+// 보고서 삭제
+export async function deleteReport(id) {
+  await deleteDoc(doc(db, COL, id))
 }
 
 // 이슈가 있는 전체 보고서 조회 (이슈 현황 페이지용)

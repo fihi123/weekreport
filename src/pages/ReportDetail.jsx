@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getReportById } from '../firebase/reports'
+import { getReportById, deleteReport } from '../firebase/reports'
 import { getWeekLabel } from '../utils/weeks'
 import { getMember } from '../utils/member'
+import ConfirmModal from '../components/ConfirmModal'
+import Toast from '../components/Toast'
 
 export default function ReportDetail() {
   const { id } = useParams()
@@ -10,19 +12,36 @@ export default function ReportDetail() {
   const me = getMember()
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
-    getReportById(id).then((data) => {
-      setReport(data)
-      setLoading(false)
-    })
+    getReportById(id)
+      .then((data) => { setReport(data); setLoading(false) })
+      .catch(() => { setError('보고서를 불러오는 중 오류가 발생했습니다.'); setLoading(false) })
   }, [id])
 
+  async function handleDelete() {
+    setShowDeleteConfirm(false)
+    try {
+      await deleteReport(id)
+      navigate('/history', { replace: true })
+    } catch {
+      setToast({ message: '삭제 중 오류가 발생했습니다', type: 'error' })
+    }
+  }
+
   if (loading) return <div className="text-center py-20 text-gray-400">불러오는 중...</div>
+  if (error) return (
+    <div className="text-center py-16">
+      <p className="text-red-500 mb-3">{error}</p>
+      <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline">뒤로</button>
+    </div>
+  )
   if (!report) return <div className="text-center py-20 text-gray-400">보고서를 찾을 수 없습니다</div>
 
-  const isMe = report.member === me
-  const isMine = isMe
+  const isMine = report.member === me
 
   return (
     <div>
@@ -38,7 +57,7 @@ export default function ReportDetail() {
           <h2 className="text-xl font-bold text-gray-800">{report.member}님의 주간보고</h2>
           <p className="text-sm text-gray-500 mt-1">{getWeekLabel(report.weekStart)}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span
             className={`text-xs font-medium px-2.5 py-1 rounded-full ${
               report.status === 'submitted'
@@ -49,12 +68,20 @@ export default function ReportDetail() {
             {report.status === 'submitted' ? '제출완료' : '임시저장'}
           </span>
           {isMine && (
-            <button
-              onClick={() => navigate(`/write/${id}`)}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
-            >
-              수정하기
-            </button>
+            <>
+              <button
+                onClick={() => navigate(`/write/${id}`)}
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
+              >
+                수정
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600"
+              >
+                삭제
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -102,6 +129,19 @@ export default function ReportDetail() {
           })
         })()}
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="보고서 삭제"
+          message="이 보고서를 삭제하시겠습니까? 삭제 후 복구할 수 없습니다."
+          confirmText="삭제"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+          danger
+        />
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
 }
