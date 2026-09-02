@@ -13,6 +13,7 @@
     @media(max-width:1050px){.dashboard{grid-template-columns:1fr;gap:25px}.calendar-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:760px){main{padding:0 14px 36px}.topbar{grid-template-columns:1fr auto;height:72px}.outline-btn{display:none}.dashboard{padding-top:30px}.metrics{grid-template-columns:repeat(3,1fr)}.metric{min-height:104px;padding:14px}.metric strong{font-size:28px}.input-wrap input{height:40px;font-size:23px}.calendar-grid{grid-template-columns:repeat(2,1fr)}.legend{overflow-x:auto}.legend .hint{display:none}}@media(max-width:480px){.brand p{display:none}.brand h1{font-size:17px}.brand-mark{width:36px;height:36px}.intro h2{font-size:34px}.metrics{grid-template-columns:1fr}.metric{min-height:auto}.calendar-grid{grid-template-columns:1fr}.day{min-height:63px}.picker-options{grid-template-columns:1fr}.type-btn{height:52px;flex-direction:row;justify-content:space-between;padding:0 18px}}@media print{.topbar button,.hint{display:none}.dashboard{grid-template-columns:1fr 1fr;padding:20px 0}.calendar-grid{grid-template-columns:repeat(4,1fr);gap:8px}.day{min-height:42px}.month-card{break-inside:avoid}.modal{display:none!important}}
     /* 데스크톱: 연차 요약을 오른쪽에 항상 보이도록 고정 */
     @media(min-width:1051px){main{padding-right:300px}.dashboard{display:block;padding-right:12px}.intro{max-width:760px}.metrics{position:fixed;z-index:30;top:104px;right:max(24px,calc((100vw - 1540px)/2 + 24px));width:244px;display:grid;grid-template-columns:1fr;gap:10px;padding:10px;border:1px solid #d6e0d9;border-radius:25px;background:#f5f7f2e8;box-shadow:0 18px 50px #18322b1c;backdrop-filter:blur(14px)}.metric{min-height:112px;padding:17px}.metric>span{margin-bottom:12px}.metric strong{font-size:34px}}
+    .leave.여휴{color:#247a77;background:#e9f8f6}.leave.여휴 .leave-pill{background:#247a77}.summer{background:#e7f5f2;border-color:#9dcfc7}.summer>span,.summer small{color:#517c75}.summer strong{color:#17625d}.summer.over{background:#a9433a;border-color:#a9433a;color:#fff}.summer.over>span,.summer.over small,.summer.over strong{color:#fff}.type-btn[data-type="여휴"]{color:#176b67;border-color:#9dcfc7}@media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr)}}
   </style>
 </head>
 <body>
@@ -31,5 +32,27 @@ const $=s=>document.querySelector(s),fmt=n=>Number(n.toFixed(2)).toString(),keyO
 function save(){localStorage.setItem('leave-calendar-v2',JSON.stringify({year,leaves,allowances}))}function totals(){const used=Object.entries(leaves).filter(([k])=>k.startsWith(`${year}-`)).reduce((s,[,t])=>s+VALUE[t],0),total=Number(allowances[year]??15),remain=total-used;$('#used').textContent=fmt(used);$('#remaining').textContent=fmt(remain);$('#remaining-card').classList.toggle('over',remain<0)}
 function render(){year=Math.max(2026,year);$('#year').textContent=year;$('#planner-year').textContent=year;$('#allowance').value=allowances[year]??15;const cal=$('#calendar');cal.innerHTML='';for(let m=0;m<12;m++){const card=document.createElement('section');card.className='month-card';card.innerHTML=`<div class="month-title"><h2>${MONTHS[m]}</h2><span>${year}</span></div><div class="week-row">${WEEK.map((d,i)=>`<span class="${i===0?'sun':i===6?'sat':''}">${d}</span>`).join('')}</div><div class="days-grid"></div>`;const grid=card.querySelector('.days-grid'),first=new Date(year,m,1).getDay(),last=new Date(year,m+1,0).getDate();for(let i=0;i<42;i++){const d=i-first+1;if(d<1||d>last){grid.insertAdjacentHTML('beforeend','<span class="day empty"></span>');continue}const key=keyOf(m,d),ev=year===2026?events2026[key]:null,leave=leaves[key],dow=i%7,b=document.createElement('button');b.className=`day ${leave?`leave ${leave}`:''} ${ev?.[1]?'holiday':''}`;b.innerHTML=`<span class="date ${dow===0||ev?.[1]?'sun':dow===6?'sat':''}">${d}</span>${ev?`<span class="event">${ev[0]}</span>`:''}${leave?`<span class="leave-pill">${leave}</span>`:''}`;b.onclick=()=>openPicker(key);grid.appendChild(b)}cal.appendChild(card)}totals();save()}
 function openPicker(key){selected=key;$('#selected-date').textContent=key.replaceAll('-','. ');$('#delete').style.display=leaves[key]?'block':'none';$('#modal').classList.add('open')}function close(){selected=null;$('#modal').classList.remove('open')}document.querySelectorAll('.type-btn').forEach(b=>b.onclick=()=>{leaves[selected]=b.dataset.type;close();render()});$('#delete').onclick=()=>{delete leaves[selected];close();render()};$('#cancel').onclick=close;$('#modal').onclick=e=>{if(e.target.id==='modal')close()};document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});$('#prev').onclick=()=>{year=Math.max(2026,year-1);render()};$('#next').onclick=()=>{year++;render()};$('#allowance').oninput=e=>{allowances[year]=Math.max(0,Number(e.target.value)||0);totals();save()};$('#reset').onclick=()=>{if(confirm(`${year}년 연차 표시를 모두 지울까요?`)){leaves=Object.fromEntries(Object.entries(leaves).filter(([k])=>!k.startsWith(`${year}-`)));render()}};render();
+</script>
+<script>
+// 여름휴가: 연차와 별도로 매년 3일 부여. 2026년 기존 사용일(7/28~30) 초기 반영.
+VALUE.여휴=0;
+const summerSeed={"2026-07-28":"여휴","2026-07-29":"여휴","2026-07-30":"여휴"};
+let summerSeeded=Boolean(saved.summerSeeded);
+if(!summerSeeded){leaves={...summerSeed,...leaves};summerSeeded=true}
+const originalSave=save;
+save=function(){localStorage.setItem('leave-calendar-v2',JSON.stringify({year,leaves,allowances,summerSeeded}))};
+document.querySelector('.metrics').insertAdjacentHTML('beforeend','<div class="metric summer" id="summer-card"><span>남은 여름휴가</span><strong id="summer-remaining">3</strong><small>일</small></div>');
+document.querySelector('.legend .hint').insertAdjacentHTML('beforebegin','<span><i class="dot" style="background:#247a77"></i>여휴 <b>별도 3일</b></span>');
+document.querySelector('.picker-options').insertAdjacentHTML('beforeend','<button class="type-btn" data-type="여휴"><span>여휴</span><b>1일</b></button>');
+document.querySelector('.type-btn[data-type="여휴"]').onclick=()=>{leaves[selected]='여휴';close();render()};
+totals=function(){
+  const yearEntries=Object.entries(leaves).filter(([k])=>k.startsWith(`${year}-`));
+  const annualUsed=yearEntries.reduce((sum,[,type])=>sum+(VALUE[type]||0),0);
+  const summerUsed=yearEntries.filter(([,type])=>type==='여휴').length;
+  const total=Number(allowances[year]??15),remain=total-annualUsed,summerRemain=3-summerUsed;
+  $('#used').textContent=fmt(annualUsed);$('#remaining').textContent=fmt(remain);$('#remaining-card').classList.toggle('over',remain<0);
+  $('#summer-remaining').textContent=fmt(summerRemain);$('#summer-card').classList.toggle('over',summerRemain<0);
+};
+render();
 </script>
 </body></html>
