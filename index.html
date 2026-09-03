@@ -37,6 +37,8 @@
     @media(max-width:1260px){.topbar{grid-template-columns:170px 154px minmax(440px,1fr) 122px;gap:12px}.topbar .metrics{gap:7px!important}.topbar .metric{padding-inline:11px!important}}
     @media(max-width:1120px){.topbar{grid-template-columns:1fr auto auto}.topbar .metrics{width:100%!important;max-width:none;grid-column:1/-1}.topbar .outline-btn{width:auto}}
     @media(max-width:640px){.topbar{grid-template-columns:1fr 126px 42px}.topbar .year-switch{height:42px}.topbar .metrics{gap:7px!important}.topbar .metric{height:56px!important;min-height:56px!important;padding:8px 11px!important}.topbar .input-wrap input{font-size:22px}}
+    .topbar .metrics{grid-template-columns:repeat(4,minmax(0,1fr))!important}.topbar .metric>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    @media(max-width:640px){.topbar .metrics{gap:5px!important}.topbar .metric{padding:7px 8px!important;border-radius:11px}.topbar .metric>span{font-size:9px!important}.topbar .metric strong,.topbar .input-wrap input{font-size:20px!important}.topbar .metric small,.topbar .input-wrap b{font-size:9px}.topbar .input-wrap input{width:42px}}
   </style>
 </head>
 <body>
