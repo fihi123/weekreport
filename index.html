@@ -26,6 +26,17 @@
     .picker{width:min(500px,100%)}.picker-options{grid-template-columns:repeat(4,1fr)}
     @media(max-width:760px){.topbar .outline-btn{display:block!important;width:42px;height:42px;padding:0!important;font-size:0}.topbar .outline-btn::before{content:'↻';font-size:19px}.picker{padding:22px}.picker-options{grid-template-columns:repeat(2,1fr)}.type-btn{height:62px}.month-title{padding:13px 14px 9px}.month-title h2{font-size:19px}}
     @media(max-width:480px){.topbar{gap:8px}.topbar .brand{gap:7px}.topbar .brand h1{font-size:16px}.year-switch{min-width:116px}.calendar-grid{gap:12px}.picker h2{font-size:22px}.picker-options{grid-template-columns:repeat(2,1fr)}.type-btn{height:58px;flex-direction:column;justify-content:center;padding:0}}
+    /* 상단 컨트롤 크기 통일 */
+    .topbar{grid-template-columns:190px 164px minmax(480px,760px) 132px;justify-content:space-between;gap:16px;padding-block:10px}
+    .topbar .year-switch,.topbar .outline-btn{height:48px}
+    .topbar .metrics{width:min(760px,100%)!important;justify-self:center;gap:10px!important}
+    .topbar .metric{height:60px!important;min-height:60px!important;padding:9px 14px!important}
+    .topbar .input-wrap{height:auto;justify-content:space-between;gap:4px}
+    .topbar .input-wrap input{width:72px;height:auto;padding:0;border:0;background:transparent;font-size:24px;line-height:1;box-shadow:none!important}
+    .topbar .input-wrap b{margin-left:auto;font-size:11px}
+    @media(max-width:1260px){.topbar{grid-template-columns:170px 154px minmax(440px,1fr) 122px;gap:12px}.topbar .metrics{gap:7px!important}.topbar .metric{padding-inline:11px!important}}
+    @media(max-width:1120px){.topbar{grid-template-columns:1fr auto auto}.topbar .metrics{width:100%!important;max-width:none;grid-column:1/-1}.topbar .outline-btn{width:auto}}
+    @media(max-width:640px){.topbar{grid-template-columns:1fr 126px 42px}.topbar .year-switch{height:42px}.topbar .metrics{gap:7px!important}.topbar .metric{height:56px!important;min-height:56px!important;padding:8px 11px!important}.topbar .input-wrap input{font-size:22px}}
   </style>
 </head>
 <body>
