@@ -39,11 +39,13 @@
     @media(max-width:640px){.topbar{grid-template-columns:1fr 126px 42px}.topbar .year-switch{height:42px}.topbar .metrics{gap:7px!important}.topbar .metric{height:56px!important;min-height:56px!important;padding:8px 11px!important}.topbar .input-wrap input{font-size:22px}}
     .topbar .metrics{grid-template-columns:repeat(4,minmax(0,1fr))!important}.topbar .metric>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
     @media(max-width:640px){.topbar .metrics{gap:5px!important}.topbar .metric{padding:7px 8px!important;border-radius:11px}.topbar .metric>span{font-size:9px!important}.topbar .metric strong,.topbar .input-wrap input{font-size:20px!important}.topbar .metric small,.topbar .input-wrap b{font-size:9px}.topbar .input-wrap input{width:42px}}
+    .topbar .metric{height:50px!important;min-height:50px!important;display:flex;align-items:center;justify-content:space-between;gap:8px}.topbar .metric>span{flex:0 1 auto;margin:0!important}.topbar .metric-value,.topbar .input-wrap{display:flex;flex:0 0 auto;align-items:baseline;justify-content:flex-end;gap:4px}.topbar .input-wrap input{text-align:right}.topbar .metric small,.topbar .input-wrap b{margin:0}
+    @media(max-width:640px){.topbar .metric{height:46px!important;min-height:46px!important;gap:4px}.topbar .metric>span{max-width:58%}.topbar .metric-value,.topbar .input-wrap{gap:2px}}
   </style>
 </head>
 <body>
 <main>
-  <header class="topbar"><div class="brand"><div class="brand-mark">☂</div><div><p>MY LEAVE</p><h1>연차 달력</h1></div></div><div class="year-switch"><button class="icon-btn" id="prev" aria-label="이전 연도">‹</button><strong id="year">2026</strong><button class="icon-btn" id="next" aria-label="다음 연도">›</button></div><div class="metrics"><label class="metric"><span>총 연차</span><div class="input-wrap"><input id="allowance" type="number" min="0" step="0.25" value="15" aria-label="총 연차 일수"><b>일</b></div></label><div class="metric"><span>사용 연차</span><strong id="used">0</strong><small>일</small></div><div class="metric remaining" id="remaining-card"><span>남은 연차</span><strong id="remaining">15</strong><small>일</small></div></div><button class="outline-btn" id="reset">↻ 연도 초기화</button></header>
+  <header class="topbar"><div class="brand"><div class="brand-mark">☂</div><div><p>MY LEAVE</p><h1>연차 달력</h1></div></div><div class="year-switch"><button class="icon-btn" id="prev" aria-label="이전 연도">‹</button><strong id="year">2026</strong><button class="icon-btn" id="next" aria-label="다음 연도">›</button></div><div class="metrics"><label class="metric"><span>총 연차</span><div class="input-wrap"><input id="allowance" type="number" min="0" step="0.25" value="15" aria-label="총 연차 일수"><b>일</b></div></label><div class="metric"><span>사용 연차</span><div class="metric-value"><strong id="used">0</strong><small>일</small></div></div><div class="metric remaining" id="remaining-card"><span>남은 연차</span><div class="metric-value"><strong id="remaining">15</strong><small>일</small></div></div></div><button class="outline-btn" id="reset">↻ 연도 초기화</button></header>
   <div class="calendar-grid" id="calendar"></div>
 </main>
 <div class="modal" id="modal"><section class="picker" role="dialog" aria-modal="true" aria-labelledby="picker-title"><div class="picker-check">✓</div><p id="selected-date"></p><h2 id="picker-title">어떻게 사용할까요?</h2><div class="picker-options"><button class="type-btn" data-type="연차"><span>연차</span><b>1일</b></button><button class="type-btn" data-type="반차"><span>반차</span><b>0.5일</b></button><button class="type-btn" data-type="반반차"><span>반반차</span><b>0.25일</b></button></div><button class="wide-btn delete-btn" id="delete">이 날짜의 연차 삭제</button><button class="wide-btn cancel-btn" id="cancel">취소</button></section></div>
@@ -77,7 +79,7 @@ let summerSeeded=Boolean(saved.summerSeeded);
 if(!summerSeeded){leaves={...summerSeed,...leaves};summerSeeded=true}
 const originalSave=save;
 save=function(){localStorage.setItem('leave-calendar-v2',JSON.stringify({year,leaves,allowances,summerSeeded}))};
-document.querySelector('.metrics').insertAdjacentHTML('beforeend','<div class="metric summer" id="summer-card"><span>남은 여름휴가</span><strong id="summer-remaining">3</strong><small>일</small></div>');
+document.querySelector('.metrics').insertAdjacentHTML('beforeend','<div class="metric summer" id="summer-card"><span>남은 여름휴가</span><div class="metric-value"><strong id="summer-remaining">3</strong><small>일</small></div></div>');
 document.querySelector('.picker-options').insertAdjacentHTML('beforeend','<button class="type-btn" data-type="여휴"><span>여휴</span><b>1일</b></button>');
 function setSummerLeave(startKey){
   const selectedYear=Number(startKey.slice(0,4)),events=holidayEvents(selectedYear);
